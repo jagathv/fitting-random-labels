@@ -18,16 +18,16 @@ parser.add_argument('--eval-full-trainset', type=bool, default=True,
                     help='Whether to re-evaluate the full train set on a fixed model, or simply ' +
                     'report the running average of training statistics')
 
-parser.add_argument('--arch', default='wide-resnet', choices=['wide-resnet', 'mlp'])
+parser.add_argument('--arch', default='mlp', choices=['wide-resnet', 'mlp'])
 
-parser.add_argument('--wrn-depth', type=int, default=28)
-parser.add_argument('--wrn-widen-factor', type=int, default=1)
-parser.add_argument('--wrn-droprate', type=float, default=0.0)
+# parser.add_argument('--wrn-depth', type=int, default=28)
+# parser.add_argument('--wrn-widen-factor', type=int, default=1)
+# parser.add_argument('--wrn-droprate', type=float, default=0.0)
 
 parser.add_argument('--mlp-spec', default='512',
                     help='mlp spec: e.g. 512x128x512 indicates 3 hidden layers')
 
-parser.add_argument('--name', default='', help='Experiment name')
+parser.add_argument('--name', default='testest', help='Experiment name')
 
 
 def format_experiment_name(args):
