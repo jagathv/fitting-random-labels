@@ -140,6 +140,11 @@ def train_model(args, model, train_loader, val_loader,
 
     print("Saving model and files")
     data_directory = "experiment_save/"
+
+
+    if not os.path.exists(data_directory):
+        os.mkdir(data_directory)
+        
     experiment_name = "test"
     torch.save(model, os.path.join(data_directory, str(experiment_name) + "-finalmodel.pt"))
     print("Done saving model")
