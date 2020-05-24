@@ -8,7 +8,13 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 import torch.backends.cudnn as cudnn
 import torch.optim
+
+import matplotlib as mpl
+
+mpl.rcParams['agg.path.chunksize'] = 10000
+
 import matplotlib.pyplot as plt
+
 
 from cifar10_data import CIFAR10RandomLabels
 
@@ -83,17 +89,17 @@ def train_model(args, model, train_loader, val_loader,
     # define loss function (criterion) and pptimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
-                                momentum=args.momentum,
-                                weight_decay=args.weight_decay)
+                                momentum=args.momentum)
 
     start_epoch = start_epoch or 0
     epochs = epochs or args.epochs
 
-    prod_weight_norms = []
+
     train_loss = []
     train_acc = []
     test_loss = []
     test_acc = []
+    prod_weight_norms = []
     norm_weight_norms = []
 
 
@@ -101,35 +107,27 @@ def train_model(args, model, train_loader, val_loader,
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
-        tr_loss, tr_prec1 = train_epoch(train_loader, model, criterion, optimizer, epoch, args)
+        train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args)
 
-        train_loss.append(tr_loss)
-        train_acc.append(tr_prec1)
+        train_loss = np.concatenate((train_loss, train_losses_lst))
+        train_acc = np.concatenate((train_acc, train_accuracy_lst))
+        prod_weight_norms = np.concatenate((prod_weight_norms, prod_weight_norm_lst))
+        norm_weight_norms = np.concatenate((norm_weight_norms, norm_weight_norm_lst))
+        test_loss = np.concatenate((test_loss, val_loss_lst))
+        test_acc = np.concatenate((test_acc, val_accuracy_lst))
 
         # evaluate on validation set
-        val_loss, val_prec1 = validate_epoch(val_loader, model, criterion, epoch, args)
+        # val_loss, val_prec1 = validate_epoch(val_loader, model, criterion, epoch, args)
 
-        test_loss.append(val_loss)
-        test_acc.append(val_prec1)
-
-        if args.eval_full_trainset:
-            tr_loss, tr_prec1 = validate_epoch(train_loader, model, criterion, epoch, args)
-
-        # quickly calculate weight norms
-        # sum weight norm
-        update_weight_norms = np.array([np.linalg.norm(p.data.flatten().numpy()) for p in model.parameters()])
-        norm_weight_norm = np.log(np.linalg.norm(update_weight_norms))
-        norm_weight_norms.append(norm_weight_norm)
-
-        # prod weight norms
-        prod_weight_norm = np.log(np.prod(update_weight_norms))
-        prod_weight_norms.append(prod_weight_norm)
+        # test_loss.append(val_loss)
+        # test_acc.append(val_prec1)
+        #
+        # if args.eval_full_trainset:
+        #     tr_loss, tr_prec1 = validate_epoch(train_loader, model, criterion, epoch, args)
 
 
-        logging.info('%03d: Acc-tr: %6.2f, Acc-val: %6.2f, L-tr: %6.4f, L-val: %6.4f',
-                     epoch, tr_prec1, val_prec1, tr_loss, val_loss)
-        logging.info('%6.2f: norm weight norms: %6.2f',
-                     norm_weight_norm, prod_weight_norm)
+        # logging.info('Epoch num: %03d: Average train accuracy: %6.2f, Acc-val: %6.2f, L-val: %6.4f',
+        #              epoch, val_prec1, val_loss)
 
     train_loss = np.array(train_loss)
     train_acc = np.array(train_acc)
@@ -144,7 +142,7 @@ def train_model(args, model, train_loader, val_loader,
 
     if not os.path.exists(data_directory):
         os.mkdir(data_directory)
-        
+
     experiment_name = "test"
     torch.save(model, os.path.join(data_directory, str(experiment_name) + "-finalmodel.pt"))
     print("Done saving model")
@@ -158,7 +156,7 @@ def train_model(args, model, train_loader, val_loader,
     print("Done Saving")
 
 
-def train_epoch(train_loader, model, criterion, optimizer, epoch, args):
+def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args):
     """Train for one epoch on the training set"""
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -166,6 +164,15 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, args):
 
     # switch to train mode
     model.train()
+
+    train_losses_lst = []
+    train_accuracy_lst = []
+    prod_weight_norm_lst = []
+    norm_weight_norm_lst = []
+    val_loss_lst = []
+    val_accuracy_lst = []
+
+
 
     for i, (input, target) in enumerate(train_loader):
         # target = target.cuda(non_blocking=True)
@@ -177,17 +184,39 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, args):
         output = model(input_var)
         loss = criterion(output, target_var)
 
+
+
         # measure accuracy and record loss
         prec1 = accuracy(output.data, target, topk=(1,))[0]
         losses.update(loss.item(), input.size(0))
         top1.update(prec1.item(), input.size(0))
+
+        val_loss, val_prec1 = validate_epoch(val_loader, model, criterion, epoch, args)
+
+        # --- UPDATE EVERYTHING ------
+        train_losses_lst.append(loss.item())
+        train_accuracy_lst.append(prec1.item())
+
+        update_weight_norms = np.array([np.linalg.norm(p.data.flatten().numpy()) for p in model.parameters()])
+        norm_weight_norm = np.linalg.norm(update_weight_norms)
+        norm_weight_norm_lst.append(norm_weight_norm)
+
+        # prod weight norms
+        prod_weight_norm = np.prod(update_weight_norms)
+        prod_weight_norm_lst.append(prod_weight_norm)
+
+        val_loss_lst.append(val_loss)
+        val_accuracy_lst.append(val_prec1)
+        # -----------------------------
+
+
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-    return losses.avg, top1.avg
+    return  train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst
 
 
 def validate_epoch(val_loader, model, criterion, epoch, args):

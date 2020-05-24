@@ -8,9 +8,9 @@ parser.add_argument('--num-classes', type=int, default=10)
 parser.add_argument('--data-augmentation', type=bool, default=False)
 parser.add_argument('--label-corrupt-prob', type=float, default=0.0)
 
-parser.add_argument('--batch-size', type=int, default=128)
-parser.add_argument('--epochs', type=int, default=300)
-parser.add_argument('--learning-rate', type=float, default=0.1)
+parser.add_argument('--batch-size', type=int, default=512)
+parser.add_argument('--epochs', type=int, default=100)
+parser.add_argument('--learning-rate', type=float, default=0.05)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--weight-decay', type=float, default=1e-4)
 
@@ -27,7 +27,7 @@ parser.add_argument('--arch', default='mlp', choices=['wide-resnet', 'mlp'])
 parser.add_argument('--mlp-spec', default='512',
                     help='mlp spec: e.g. 512x128x512 indicates 3 hidden layers')
 
-parser.add_argument('--name', default='testest', help='Experiment name')
+parser.add_argument('--name', default='batchsize512_lr05_epoch100', help='Experiment name')
 
 
 def format_experiment_name(args):
