@@ -8,7 +8,7 @@ parser.add_argument('--num-classes', type=int, default=10)
 parser.add_argument('--data-augmentation', type=bool, default=False)
 parser.add_argument('--label-corrupt-prob', type=float, default=0.0)
 
-parser.add_argument('--batch-size', type=int, default=512)
+parser.add_argument('--batch-size', type=int, default=128)
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--learning-rate', type=float, default=0.05)
 parser.add_argument('--momentum', type=float, default=0.9)
