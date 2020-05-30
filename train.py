@@ -103,12 +103,17 @@ def train_model(args, model, train_loader, val_loader,
     norm_weight_norms = []
     prod_spectral_norms = []
 
+    update_count = 0
+    print("TRAINING FOR " + str(args.itercount) + " ITERATIONS")
 
     for epoch in range(start_epoch, epochs):
+        print("On epoch " + str(epoch))
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
         train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_spectral_norm_lst = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args)
+
+        update_count += len(train_losses_lst)
 
         train_loss = np.concatenate((train_loss, train_losses_lst))
         train_acc = np.concatenate((train_acc, train_accuracy_lst))
@@ -131,6 +136,11 @@ def train_model(args, model, train_loader, val_loader,
         # logging.info('Epoch num: %03d: Average train accuracy: %6.2f, Acc-val: %6.2f, L-val: %6.4f',
         #              epoch, val_prec1, val_loss)
 
+        if update_count > args.itercount:
+            print("EARLY STOPPING")
+            break
+
+    print("STOPPED")
     train_loss = np.array(train_loss)
     train_acc = np.array(train_acc)
     test_loss = np.array(test_loss)
