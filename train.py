@@ -101,13 +101,14 @@ def train_model(args, model, train_loader, val_loader,
     test_acc = []
     prod_weight_norms = []
     norm_weight_norms = []
+    prod_spectral_norms = []
 
 
     for epoch in range(start_epoch, epochs):
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
-        train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args)
+        train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_spectral_norm_lst = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args)
 
         train_loss = np.concatenate((train_loss, train_losses_lst))
         train_acc = np.concatenate((train_acc, train_accuracy_lst))
@@ -115,6 +116,7 @@ def train_model(args, model, train_loader, val_loader,
         norm_weight_norms = np.concatenate((norm_weight_norms, norm_weight_norm_lst))
         test_loss = np.concatenate((test_loss, val_loss_lst))
         test_acc = np.concatenate((test_acc, val_accuracy_lst))
+        prod_spectral_norms =np.concatenate((prod_spectral_norms, prod_spectral_norm_lst))
 
         # evaluate on validation set
         # val_loss, val_prec1 = validate_epoch(val_loader, model, criterion, epoch, args)
@@ -135,6 +137,7 @@ def train_model(args, model, train_loader, val_loader,
     test_acc = np.array(test_acc)
     prod_weight_norms = np.array(prod_weight_norms)
     norm_weight_norms = np.array(norm_weight_norms)
+    prod_spectral_norms = np.array(prod_spectral_norms)
 
     print("Saving model and files")
     data_directory = "experiment_save/"
@@ -152,6 +155,7 @@ def train_model(args, model, train_loader, val_loader,
     np.save(os.path.join(data_directory, str(experiment_name) + "-testaccuracy.npy"), test_acc)
     np.save(os.path.join(data_directory, str(experiment_name) + "-prod_weight_norm.npy"), prod_weight_norms)
     np.save(os.path.join(data_directory, str(experiment_name) + "-weight_norm.npy"), norm_weight_norms)
+    np.save(os.path.join(data_directory, str(experiment_name) + "-spectral_norm.npy"), prod_spectral_norms)
 
     print("Done Saving")
 
@@ -169,6 +173,7 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
     train_accuracy_lst = []
     prod_weight_norm_lst = []
     norm_weight_norm_lst = []
+    prod_spectral_norm_lst = []
     val_loss_lst = []
     val_accuracy_lst = []
 
@@ -205,6 +210,11 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         prod_weight_norm = np.prod(update_weight_norms)
         prod_weight_norm_lst.append(prod_weight_norm)
 
+        # spectral norms
+        update_spectral_norms = np.array([np.linalg.norm(p.data.flatten().numpy(), 2) for p in model.parameters()])
+        prod_spectral_norm = np.prod(update_spectral_norms)
+        prod_spectral_norm_lst.append(prod_spectral_norm)
+
         val_loss_lst.append(val_loss)
         val_accuracy_lst.append(val_prec1)
         # -----------------------------
@@ -216,7 +226,7 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         loss.backward()
         optimizer.step()
 
-    return  train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst
+    return  train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_weight_norm_lst
 
 
 def validate_epoch(val_loader, model, criterion, epoch, args):
@@ -308,6 +318,7 @@ def create_plots(data_directory, experiment_name):
     train_accuracy_base = f"{experiment_name}-trainaccuracy"
     test_loss_base = f"{experiment_name}-testloss"
     test_accuracy_base = f"{experiment_name}-testaccuracy"
+    spectral_norm_base = f"{experiment_name}-spectral_norm"
 
     train_accuracy_arr = np.load(os.path.join(data_directory, f"{train_accuracy_base}.npy"))
     plt.plot(train_accuracy_arr)
@@ -358,6 +369,14 @@ def create_plots(data_directory, experiment_name):
     plt.savefig(f"{test_accuracy_base}.png")
     plt.close()
 
+    spectral_norm_arr = np.load(os.path.join(data_directory, f"{spectral_norm_base}.npy"))
+    plt.plot(spectral_norm_arr)
+    plt.title(f"{experiment_name} Spectral Norms")
+    plt.xlabel("Updates")
+    plt.ylabel("Spectral Norm")
+    plt.savefig(f"{spectral_norm_base}.png")
+    plt.close()
+
 
 
 
@@ -377,4 +396,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
