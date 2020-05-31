@@ -105,6 +105,8 @@ def train_model(args, model, train_loader, val_loader,
     update_count = 0
     print("TRAINING FOR " + str(args.itercount) + " ITERATIONS")
 
+    epochs = args.itercount
+
     for epoch in range(start_epoch, epochs):
         print("On epoch " + str(epoch))
         adjust_learning_rate(optimizer, epoch, args)
