@@ -8,7 +8,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 import torch.backends.cudnn as cudnn
 import torch.optim
-
+from torch.utils.tensorboard import SummaryWriter
 import matplotlib as mpl
 
 mpl.rcParams['agg.path.chunksize'] = 10000
@@ -20,6 +20,8 @@ from cifar10_data import CIFAR10RandomLabels
 
 import cmd_args
 import model_mlp, model_wideresnet
+
+writer = SummaryWriter()
 
 
 def get_data_loaders(args, shuffle_train=True):
@@ -84,6 +86,7 @@ def get_model(args):
 
 def train_model(args, model, train_loader, val_loader,
                 start_epoch=None, epochs=None):
+
     cudnn.benchmark = True
 
     # define loss function (criterion) and pptimizer
@@ -113,9 +116,9 @@ def train_model(args, model, train_loader, val_loader,
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
-        train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_spectral_norm_lst = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args)
+        train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_spectral_norm_lst, update_count = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args, update_count)
 
-        update_count += len(train_losses_lst)
+
 
         train_loss = np.concatenate((train_loss, train_losses_lst))
         train_acc = np.concatenate((train_acc, train_accuracy_lst))
@@ -172,7 +175,7 @@ def train_model(args, model, train_loader, val_loader,
     print("Done Saving")
 
 
-def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args):
+def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args, update_count):
     """Train for one epoch on the training set"""
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -211,6 +214,10 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         val_loss, val_prec1 = validate_epoch(val_loader, model, criterion, epoch, args)
 
         # --- UPDATE EVERYTHING ------
+
+        writer.add_scalar('Loss/train', loss.item(), update_count)
+        writer.add_scalar('Accuracy/train', prec1.item())
+
         train_losses_lst.append(loss.item())
         train_accuracy_lst.append(prec1.item())
 
@@ -218,17 +225,25 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         norm_weight_norm = np.linalg.norm(update_weight_norms)
         norm_weight_norm_lst.append(norm_weight_norm)
 
+        writer.add_scalar('Weight_norms/normal_weight_norm', norm_weight_norm, update_count)
+
         # prod weight norms
         prod_weight_norm = np.prod(update_weight_norms)
         prod_weight_norm_lst.append(prod_weight_norm)
+
+        writer.add_scalar('Weight_norms/product_weight_norm', prod_weight_norm, update_count)
 
         # spectral norms
         update_spectral_norms = np.array([np.linalg.norm(p.data.flatten().numpy(), 2) for p in model.parameters()])
         prod_spectral_norm = np.prod(update_spectral_norms)
         prod_spectral_norm_lst.append(prod_spectral_norm)
+        writer.add_scalar('Weight_norms/product_spectral_norm', prod_spectral_norm, update_count)
 
         val_loss_lst.append(val_loss)
         val_accuracy_lst.append(val_prec1)
+
+        writer.add_scalar('Loss/validation', val_loss, update_count)
+        writer.add_scalar('Accuracy/validation', val_prec1)
         # -----------------------------
 
 
@@ -237,8 +252,9 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        update_count += 1
 
-    return  train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_weight_norm_lst
+    return  train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_weight_norm_lst, update_count
 
 
 def validate_epoch(val_loader, model, criterion, epoch, args):
