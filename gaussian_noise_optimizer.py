@@ -60,7 +60,7 @@ class GaussianNoiseOptimizer(Optimizer):
                         d_p = buf
 
                 # adding a bit of gaussian noise
-                gaussian_noise = 0.05*torch.randn(p.weight.size())
+                gaussian_noise = 0.05*torch.randn(p.data.size())
                 p.data.add_(-group['lr'], d_p)
                 p.data.add_(-group['lr'], gaussian_noise)
 
