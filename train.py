@@ -10,6 +10,7 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 from torch.utils.tensorboard import SummaryWriter
 import matplotlib as mpl
+from gaussian_noise_optimizer import GaussianNoiseOptimizer
 
 mpl.rcParams['agg.path.chunksize'] = 10000
 
@@ -91,8 +92,9 @@ def train_model(args, model, train_loader, val_loader,
 
     # define loss function (criterion) and pptimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
-                                momentum=args.momentum)
+    # optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
+    #                             momentum=args.momentum)
+    optimizer = GaussianNoiseOptimizer(model.parameters(), args.learning_rate, momentum=args.momentum)
 
     start_epoch = start_epoch or 0
     epochs = epochs or args.epochs
