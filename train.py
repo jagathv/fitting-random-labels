@@ -98,13 +98,13 @@ def train_model(args, model, train_loader, val_loader,
     epochs = epochs or args.epochs
 
 
-    train_loss = []
-    train_acc = []
-    test_loss = []
-    test_acc = []
-    prod_weight_norms = []
-    norm_weight_norms = []
-    prod_spectral_norms = []
+    # train_loss = []
+    # train_acc = []
+    # test_loss = []
+    # test_acc = []
+    # prod_weight_norms = []
+    # norm_weight_norms = []
+    # prod_spectral_norms = []
 
     update_count = 0
     print("TRAINING FOR " + str(args.itercount) + " ITERATIONS")
@@ -116,17 +116,17 @@ def train_model(args, model, train_loader, val_loader,
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
-        train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_spectral_norm_lst, update_count = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args, update_count)
+        update_count = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args, update_count)
 
 
 
-        train_loss = np.concatenate((train_loss, train_losses_lst))
-        train_acc = np.concatenate((train_acc, train_accuracy_lst))
-        prod_weight_norms = np.concatenate((prod_weight_norms, prod_weight_norm_lst))
-        norm_weight_norms = np.concatenate((norm_weight_norms, norm_weight_norm_lst))
-        test_loss = np.concatenate((test_loss, val_loss_lst))
-        test_acc = np.concatenate((test_acc, val_accuracy_lst))
-        prod_spectral_norms =np.concatenate((prod_spectral_norms, prod_spectral_norm_lst))
+        # train_loss = np.concatenate((train_loss, train_losses_lst))
+        # train_acc = np.concatenate((train_acc, train_accuracy_lst))
+        # prod_weight_norms = np.concatenate((prod_weight_norms, prod_weight_norm_lst))
+        # norm_weight_norms = np.concatenate((norm_weight_norms, norm_weight_norm_lst))
+        # test_loss = np.concatenate((test_loss, val_loss_lst))
+        # test_acc = np.concatenate((test_acc, val_accuracy_lst))
+        # prod_spectral_norms =np.concatenate((prod_spectral_norms, prod_spectral_norm_lst))
 
         # evaluate on validation set
         # val_loss, val_prec1 = validate_epoch(val_loader, model, criterion, epoch, args)
@@ -146,13 +146,13 @@ def train_model(args, model, train_loader, val_loader,
             break
 
     print("STOPPED")
-    train_loss = np.array(train_loss)
-    train_acc = np.array(train_acc)
-    test_loss = np.array(test_loss)
-    test_acc = np.array(test_acc)
-    prod_weight_norms = np.array(prod_weight_norms)
-    norm_weight_norms = np.array(norm_weight_norms)
-    prod_spectral_norms = np.array(prod_spectral_norms)
+    # train_loss = np.array(train_loss)
+    # train_acc = np.array(train_acc)
+    # test_loss = np.array(test_loss)
+    # test_acc = np.array(test_acc)
+    # prod_weight_norms = np.array(prod_weight_norms)
+    # norm_weight_norms = np.array(norm_weight_norms)
+    # prod_spectral_norms = np.array(prod_spectral_norms)
 
     print("Saving model and files")
     data_directory = "experiment_save/"
@@ -164,13 +164,13 @@ def train_model(args, model, train_loader, val_loader,
     experiment_name = "test"
     torch.save(model, os.path.join(data_directory, str(experiment_name) + "-finalmodel.pt"))
     print("Done saving model")
-    np.save(os.path.join(data_directory, str(experiment_name) + "-loss.npy"), train_loss)
-    np.save(os.path.join(data_directory, str(experiment_name) + "-trainaccuracy.npy"), train_acc)
-    np.save(os.path.join(data_directory, str(experiment_name) + "-testloss.npy"), test_loss)
-    np.save(os.path.join(data_directory, str(experiment_name) + "-testaccuracy.npy"), test_acc)
-    np.save(os.path.join(data_directory, str(experiment_name) + "-prod_weight_norm.npy"), prod_weight_norms)
-    np.save(os.path.join(data_directory, str(experiment_name) + "-weight_norm.npy"), norm_weight_norms)
-    np.save(os.path.join(data_directory, str(experiment_name) + "-spectral_norm.npy"), prod_spectral_norms)
+    # np.save(os.path.join(data_directory, str(experiment_name) + "-loss.npy"), train_loss)
+    # np.save(os.path.join(data_directory, str(experiment_name) + "-trainaccuracy.npy"), train_acc)
+    # np.save(os.path.join(data_directory, str(experiment_name) + "-testloss.npy"), test_loss)
+    # np.save(os.path.join(data_directory, str(experiment_name) + "-testaccuracy.npy"), test_acc)
+    # np.save(os.path.join(data_directory, str(experiment_name) + "-prod_weight_norm.npy"), prod_weight_norms)
+    # np.save(os.path.join(data_directory, str(experiment_name) + "-weight_norm.npy"), norm_weight_norms)
+    # np.save(os.path.join(data_directory, str(experiment_name) + "-spectral_norm.npy"), prod_spectral_norms)
 
     print("Done Saving")
 
@@ -184,13 +184,13 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
     # switch to train mode
     model.train()
 
-    train_losses_lst = []
-    train_accuracy_lst = []
-    prod_weight_norm_lst = []
-    norm_weight_norm_lst = []
-    prod_spectral_norm_lst = []
-    val_loss_lst = []
-    val_accuracy_lst = []
+    # train_losses_lst = []
+    # train_accuracy_lst = []
+    # prod_weight_norm_lst = []
+    # norm_weight_norm_lst = []
+    # prod_spectral_norm_lst = []
+    # val_loss_lst = []
+    # val_accuracy_lst = []
 
 
 
@@ -218,29 +218,29 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         writer.add_scalar('Loss/train', loss.item(), update_count)
         writer.add_scalar('Accuracy/train', prec1.item())
 
-        train_losses_lst.append(loss.item())
-        train_accuracy_lst.append(prec1.item())
+        # train_losses_lst.append(loss.item())
+        # train_accuracy_lst.append(prec1.item())
 
         update_weight_norms = np.array([np.linalg.norm(p.data.flatten().numpy()) for p in model.parameters()])
         norm_weight_norm = np.linalg.norm(update_weight_norms)
-        norm_weight_norm_lst.append(norm_weight_norm)
+        # norm_weight_norm_lst.append(norm_weight_norm)
 
         writer.add_scalar('Weight_norms/normal_weight_norm', norm_weight_norm, update_count)
 
         # prod weight norms
         prod_weight_norm = np.prod(update_weight_norms)
-        prod_weight_norm_lst.append(prod_weight_norm)
+        # prod_weight_norm_lst.append(prod_weight_norm)
 
         writer.add_scalar('Weight_norms/product_weight_norm', prod_weight_norm, update_count)
 
         # spectral norms
         update_spectral_norms = np.array([np.linalg.norm(p.data.flatten().numpy(), 2) for p in model.parameters()])
         prod_spectral_norm = np.prod(update_spectral_norms)
-        prod_spectral_norm_lst.append(prod_spectral_norm)
+        # prod_spectral_norm_lst.append(prod_spectral_norm)
         writer.add_scalar('Weight_norms/product_spectral_norm', prod_spectral_norm, update_count)
 
-        val_loss_lst.append(val_loss)
-        val_accuracy_lst.append(val_prec1)
+        # val_loss_lst.append(val_loss)
+        # val_accuracy_lst.append(val_prec1)
 
         writer.add_scalar('Loss/validation', val_loss, update_count)
         writer.add_scalar('Accuracy/validation', val_prec1)
@@ -254,7 +254,9 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         optimizer.step()
         update_count += 1
 
-    return  train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_weight_norm_lst, update_count
+
+    # return  train_losses_lst, train_accuracy_lst, prod_weight_norm_lst, norm_weight_norm_lst, val_loss_lst, val_accuracy_lst, prod_weight_norm_lst, update_count
+    return update_count
 
 
 def validate_epoch(val_loader, model, criterion, epoch, args):
@@ -420,7 +422,7 @@ def main():
         # simply create some plots of all the
         data_directory = "experiment_save/"
         experiment_name = "test"
-        create_plots(data_directory, experiment_name)
+        # create_plots(data_directory, experiment_name)
 
 if __name__ == '__main__':
     main()
