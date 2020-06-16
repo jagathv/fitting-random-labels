@@ -3,3 +3,4 @@
 experiment_save/
 data/
 .DS_STORE
+__pycache__/
