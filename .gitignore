@@ -1,0 +1,5 @@
+*.pyc
+.idea/
+experiment_save/
+data/
+.DS_STORE
