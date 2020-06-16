@@ -22,7 +22,7 @@ from cifar10_data import CIFAR10RandomLabels
 import cmd_args
 import model_mlp, model_wideresnet
 
-writer = SummaryWriter()
+writer = SummaryWriter(log_dir="experiment_save/")
 
 
 def get_data_loaders(args, shuffle_train=True):
