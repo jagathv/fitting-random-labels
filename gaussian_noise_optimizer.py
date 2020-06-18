@@ -1,32 +1,24 @@
 import torch
 from torch.optim.optimizer import Optimizer
+import math
 
 
 class GaussianNoiseOptimizer(Optimizer):
 
-    def __init__(self, params, lr=0, momentum=0, dampening=0,
-                 weight_decay=0, nesterov=False):
-        if lr < 0.0:
-            raise ValueError("Invalid learning rate: {}".format(lr))
-        if momentum < 0.0:
-            raise ValueError("Invalid momentum value: {}".format(momentum))
-        if weight_decay < 0.0:
-            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
-
-        defaults = dict(lr=lr, momentum=momentum, dampening=dampening,
-                        weight_decay=weight_decay, nesterov=nesterov)
-        if nesterov and (momentum <= 0 or dampening != 0):
-            raise ValueError("Nesterov momentum requires a momentum and zero dampening")
+    def __init__(self, params, lr=0.01, p_bound=None):
+        """The Fromage optimiser.
+        Arguments:
+            lr (float): The learning rate. 0.01 is a good initial value to try.
+            p_bound (float): Restricts the optimisation to a bounded set. A
+                value of 2.0 restricts parameter norms to lie within 2x their
+                initial norms. This regularises the model class.
+        """
+        self.p_bound = p_bound
+        defaults = dict(lr=lr)
         super(GaussianNoiseOptimizer, self).__init__(params, defaults)
-
-    def __setstate__(self, state):
-        super(GaussianNoiseOptimizer, self).__setstate__(state)
-        for group in self.param_groups:
-            group.setdefault('nesterov', False)
 
     def step(self, closure=None):
         """Performs a single optimization step.
-
         Arguments:
             closure (callable, optional): A closure that reevaluates the model
                 and returns the loss.
@@ -36,32 +28,27 @@ class GaussianNoiseOptimizer(Optimizer):
             loss = closure()
 
         for group in self.param_groups:
-            weight_decay = group['weight_decay']
-            momentum = group['momentum']
-            dampening = group['dampening']
-            nesterov = group['nesterov']
-
             for p in group['params']:
                 if p.grad is None:
                     continue
-                d_p = p.grad.data
-                if weight_decay != 0:
-                    d_p.add_(weight_decay, p.data)
-                if momentum != 0:
-                    param_state = self.state[p]
-                    if 'momentum_buffer' not in param_state:
-                        buf = param_state['momentum_buffer'] = torch.clone(d_p).detach()
-                    else:
-                        buf = param_state['momentum_buffer']
-                        buf.mul_(momentum).add_(1 - dampening, d_p)
-                    if nesterov:
-                        d_p = d_p.add(momentum, buf)
-                    else:
-                        d_p = buf
 
-                # adding a bit of gaussian noise
-                gaussian_noise = 0.05*torch.randn(p.data.size())
-                p.data.add_(-group['lr'], d_p)
-                p.data.add_(-group['lr'], gaussian_noise)
+                state = self.state[p]
+                if len(state) == 0 and self.p_bound is not None:
+                    state['max'] = self.p_bound * p.norm().item()
+
+                d_p = p.grad.data
+                d_p_norm = p.grad.norm()
+                p_norm = p.norm()
+
+                if p_norm > 0.0 and d_p_norm > 0.0:
+                    p.data.add_(-group['lr'], d_p * (p_norm / d_p_norm))
+                else:
+                    p.data.add_(-group['lr'], d_p)
+                p.data /= math.sqrt(1 + group['lr'] ** 2)
+
+                if self.p_bound is not None:
+                    p_norm = p.norm().item()
+                    if p_norm > state['max']:
+                        p.data *= state['max'] / p_norm
 
         return loss
