@@ -218,7 +218,7 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         # --- UPDATE EVERYTHING ------
 
         writer.add_scalar('Loss/train', loss.item(), update_count)
-        writer.add_scalar('Accuracy/train', prec1.item())
+        writer.add_scalar('Accuracy/train', prec1.item(), update_count)
 
         # train_losses_lst.append(loss.item())
         # train_accuracy_lst.append(prec1.item())
@@ -245,7 +245,7 @@ def train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, ar
         # val_accuracy_lst.append(val_prec1)
 
         writer.add_scalar('Loss/validation', val_loss, update_count)
-        writer.add_scalar('Accuracy/validation', val_prec1)
+        writer.add_scalar('Accuracy/validation', val_prec1, update_count)
         # -----------------------------
 
 
