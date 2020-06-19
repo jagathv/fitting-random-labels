@@ -94,7 +94,7 @@ def train_model(args, model, train_loader, val_loader,
     criterion = nn.CrossEntropyLoss()
     # optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
     #                             momentum=args.momentum)
-    optimizer = GaussianNoiseOptimizer(model.parameters(), args.learning_rate, p_bound=2.0)
+    optimizer = GaussianNoiseOptimizer(model.parameters(), args.learning_rate, p_bound=100.0)
 
     start_epoch = start_epoch or 0
     epochs = epochs or args.epochs
