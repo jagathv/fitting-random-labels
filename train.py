@@ -94,7 +94,7 @@ def train_model(args, model, train_loader, val_loader,
     criterion = nn.CrossEntropyLoss()
     # optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
     #                             momentum=args.momentum)
-    optimizer = GaussianNoiseOptimizer(model.parameters(), args.learning_rate, p_bound=100.0)
+    optimizer = GaussianNoiseOptimizer(model.parameters(), args.learning_rate, p_bound=0.5)
 
     start_epoch = start_epoch or 0
     epochs = epochs or args.epochs
@@ -115,7 +115,7 @@ def train_model(args, model, train_loader, val_loader,
 
     for epoch in range(start_epoch, epochs):
         print("On epoch " + str(epoch))
-        adjust_learning_rate(optimizer, epoch, args)
+        adjust_learning_rate(optimizer, update_count, args)
 
         # train for one epoch
         update_count = train_epoch(train_loader, val_loader, model, criterion, optimizer, epoch, args, update_count)
@@ -306,9 +306,9 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def adjust_learning_rate(optimizer, epoch, args):
+def adjust_learning_rate(optimizer, update_count, args):
     """Sets the learning rate to the initial LR decayed by 10 after 150 and 225 epochs"""
-    lr = args.learning_rate * (0.1 ** (epoch // 150)) * (0.1 ** (epoch // 225))
+    lr = args.learning_rate * (0.1 ** (update_count // 10000))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
