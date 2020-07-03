@@ -5,7 +5,7 @@ import math
 
 class GaussianNoiseOptimizer(Optimizer):
 
-    def __init__(self, params, lr=0.01, p_bound=None):
+    def __init__(self, params, lr=0.01, p_bound=None, regularization=None, lambda_strength=None):
         """The Fromage optimiser.
         Arguments:
             lr (float): The learning rate. 0.01 is a good initial value to try.
@@ -14,6 +14,8 @@ class GaussianNoiseOptimizer(Optimizer):
                 initial norms. This regularises the model class.
         """
         self.p_bound = p_bound
+        self.regularization = regularization
+        self.lambda_strength = lambda_strength
         defaults = dict(lr=lr)
         super(GaussianNoiseOptimizer, self).__init__(params, defaults)
 
@@ -37,14 +39,36 @@ class GaussianNoiseOptimizer(Optimizer):
                     state['max'] = self.p_bound * p.norm().item()
 
                 d_p = p.grad.data
-                d_p_norm = p.grad.norm()
+
+                if self.regularization == "L2":
+                    regularization_term = 2*p
+                elif self.regularization == "Spectral":
+                    U, S, V = torch.svd(p.data)
+
+                    # sing_val_term = S[0]
+                    regularization_term = U[0].view(U.shape[0], 1) @ V[:, 0].view(1, V.shape[0])
+                elif self.regularization == "Condition":
+                    U, S, V = torch.svd(p.data)
+                    # sing_val_term = S[0]
+                    lambda_max = S[0].item()
+                    lambda_min = S[-1].item()
+                    d_lambda_max = U[0].view(U.shape[0], 1) @ V[:, 0].view(1, V.shape[0])
+                    d_lambda_min = U[-1].view(U.shape[0], 1) @ V[:, -1].view(1, V.shape[0])
+
+                    regularization_term = (d_lambda_max * lambda_min - d_lambda_min * lambda_max)/(2*lambda_min)
+                else:
+                    regularization_term = 0
+
+                final_sub_term = d_p + self.lambda_strength * regularization_term
+
+                normalization_term = final_sub_term.norm()
                 p_norm = p.norm()
 
-                if p_norm > 0.0 and d_p_norm > 0.0:
-                    p.data.add_(-group['lr'], d_p * (p_norm / d_p_norm))
+                if p_norm > 0.0 and normalization_term > 0.0:
+                    p.data.add_(-group['lr'], final_sub_term * (1.0/normalization_term))
                 else:
                     p.data.add_(-group['lr'], d_p)
-                p.data /= math.sqrt(1 + group['lr'] ** 2)
+                # p.data /= math.sqrt(1 + group['lr'] ** 2)
 
                 if self.p_bound is not None:
                     p_norm = p.norm().item()

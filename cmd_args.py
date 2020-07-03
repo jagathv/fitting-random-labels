@@ -14,6 +14,9 @@ parser.add_argument('--itercount', type=int, default=5000)
 parser.add_argument('--learning-rate', type=float, default=0.05)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--weight-decay', type=float, default=1e-4)
+parser.add_argument('--regularizer', default='None', choices=['None','L2', 'Spectral', 'Condition'])
+parser.add_argument('--regularizerstrength', type=float, default=1.0)
+parser.add_argument('--dryrun', type=bool, default=False, help="use this if you're testing to see if code goes through")
 
 parser.add_argument('--eval-full-trainset', type=bool, default=True,
                     help='Whether to re-evaluate the full train set on a fixed model, or simply ' +
