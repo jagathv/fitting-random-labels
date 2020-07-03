@@ -90,7 +90,8 @@ def get_model(args):
 def train_model(args, model, train_loader, val_loader,
                 start_epoch=None, epochs=None, data_directory="experiment_save/"):
 
-    if not args.dryrun:
+    print(args.dryrun)
+    if not bool(args.dryrun):
         print("LOGGING INTO DATA DIR: " + str(data_directory))
         if not os.path.exists(data_directory):
             print("MAKING THE DIRECTORY TO SAVE THE STUFF IN")
@@ -300,8 +301,8 @@ def accuracy(output, target, topk=(1,)):
 def setup_logging(args):
     import datetime
     if not args.dryrun:
-        print("hahaha")
-        exp_dir = os.path.join('runs', args.exp_name)
+        first_dir = os.path.join(args.datadirectory, 'runs')
+        exp_dir = os.path.join(first_dir, args.exp_name)
         if not os.path.isdir(exp_dir):
             os.makedirs(exp_dir)
         log_fn = os.path.join(exp_dir, "LOG.{0}.txt".format(datetime.date.today().strftime("%y%m%d")))
@@ -390,7 +391,7 @@ def main():
         train_loader, val_loader = get_data_loaders(args, shuffle_train=True)
         model = get_model(args)
         logging.info('Number of parameters: %d', sum([p.data.nelement() for p in model.parameters()]))
-        train_model(args, model, train_loader, val_loader)
+        train_model(args, model, train_loader, val_loader, data_directory=args.datadirectory)
         # simply create some plots of all the
         # data_directory = "experiment_save/"
         # experiment_name = "test"
